@@ -7,7 +7,6 @@ Single Table Inheritance
 [![Total Downloads](https://poser.pugx.org/nanigans/single-table-inheritance/downloads.svg)](https://packagist.org/packages/nanigans/single-table-inheritance)
 [![Latest Unstable Version](https://poser.pugx.org/nanigans/single-table-inheritance/v/unstable.svg)](https://packagist.org/packages/nanigans/single-table-inheritance)
 [![License](https://poser.pugx.org/nanigans/single-table-inheritance/license.svg)](https://packagist.org/packages/nanigans/single-table-inheritance)
-[![Dependency Status](https://www.versioneye.com/php/nanigans:single-table-inheritance/badge.svg)](https://www.versioneye.com/php/nanigans:single-table-inheritance)
 
 Single Table Inheritance is a trait for Laravel 5.2+ Eloquent models that allows multiple models to be stored in the same database table. We support a few key features
 
@@ -23,13 +22,13 @@ Single Table Inheritance is a trait for Laravel 5.2+ Eloquent models that allows
 Simply add the package to your `composer.json` file and run `composer update`.
 
 ```
-"nanigans/single-table-inheritance": "0.7.*"
+"nanigans/single-table-inheritance": "0.8.*"
 ```
 
 Or go to your project directory where the `composer.json` file is located and type:
 
 ```sh
-composer require "nanigans/single-table-inheritance:0.7.*"
+composer require "nanigans/single-table-inheritance:0.8.*"
 ```
 
 # Overview
@@ -176,7 +175,7 @@ protected static $throwInvalidAttributeExceptions = true;
 
 We've chosen a very particular implementation to support single table inheritance. However, others have written code and articles around a general approach that proved influential.
 
-First, Mark Smith has an excellent article [Single Table Inheritance in Laravel 4](http://www.colorfultyping.com/single-table-inheritance-in-laravel-4/) amongst other things is introduces the importance of queries returning objects of the correct type. Second, Jacopo Beschi wrote and extension of Eloquent's `Model`, [Laravel-Single-Table-Inheritance](https://github.com/intrip/laravel-single-table-inheritance)`, that introduces the importance of being able to define which attributes each model persists.
+First, Mark Smith has an excellent article (no long live but available in web archive) [Single Table Inheritance in Laravel 4](https://web.archive.org/web/20171224233536/http://www.colorfultyping.com/single-table-inheritance-in-laravel-4/) amongst other things is introduces the importance of queries returning objects of the correct type. Second, Jacopo Beschi wrote and extension of Eloquent's `Model`, [Laravel-Single-Table-Inheritance](https://github.com/intrip/laravel-single-table-inheritance)`, that introduces the importance of being able to define which attributes each model persists.
 
 The use of Traits was heavy influence by the Eloquent's `SoftDeletingTrait` and the excellent [Validating Trait](https://github.com/dwightwatson/validating). 
 

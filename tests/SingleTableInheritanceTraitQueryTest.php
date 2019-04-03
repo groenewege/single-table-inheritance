@@ -4,6 +4,7 @@ namespace Nanigans\SingleTableInheritance\Tests;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Nanigans\SingleTableInheritance\Tests\Fixtures\User;
 use Nanigans\SingleTableInheritance\Tests\Fixtures\Bike;
 use Nanigans\SingleTableInheritance\Tests\Fixtures\Car;
 use Nanigans\SingleTableInheritance\Tests\Fixtures\MotorVehicle;
@@ -56,6 +57,21 @@ class SingleTableInheritanceTraitQueryTest extends TestCase {
     $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Truck',        $results[3]);
   }
 
+    public function testQueryingOnChildOfChild() {
+        (new MotorVehicle())->save();
+        (new Car())->save();
+        (new Truck())->save();
+        (new Truck())->save();
+        (new Bike())->save();
+
+        $results = Truck::all();
+
+        $this->assertEquals(2, count($results));
+
+        $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Truck',        $results[0]);
+        $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Truck',        $results[1]);
+    }
+
   public function testQueryingOnLeaf() {
 
     (new MotorVehicle())->save();
@@ -89,7 +105,22 @@ class SingleTableInheritanceTraitQueryTest extends TestCase {
     $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Car', $vehicle);
   }
 
-  public function testIgnoreRowsWithMismatchingFieldType() {
+  public function testTypedModelLoadedFromRelationship() {
+    $user = new User();
+    $user->name = 'Vehicle Owner';
+    $user->save();
+    $user->vehicles()->save(new Car());
+    $user->vehicles()->save(new Bike());
+
+    // reload the user
+    $user = User::find($user->id);
+
+    $this->assertCount(2, $user->vehicles);
+    $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Car', $user->vehicles[0]);
+    $this->assertInstanceOf('Nanigans\SingleTableInheritance\Tests\Fixtures\Bike', $user->vehicles[1]);
+  }
+
+public function testIgnoreRowsWithMismatchingFieldType() {
     $now = Carbon::now();
 
     DB::table('vehicles')->insert([
@@ -204,5 +235,34 @@ class SingleTableInheritanceTraitQueryTest extends TestCase {
     $dbCar = Vehicle::where('color', 'red')->first();
     $dbCar->color = 'green';
     $this->assertTrue($dbCar->save()); // if the scope doesn't remove bindings this save will throw an exception.
+  }
+
+
+  public function testPluckNonIdProperty() {
+    $redCar = new Car();
+    $redCar->color = 'red';
+    $redCar->save();
+
+    $blueBike = new Bike();
+    $blueBike->color = 'blue';
+    $blueBike->save();
+
+    $carColors = Vehicle::all()->pluck('color');
+
+    $this->assertEquals(['red', 'blue'], $carColors->toArray());
+  }
+
+  public function testPluckId() {
+    $redCar = new Car();
+    $redCar->color = 'red';
+    $redCar->save();
+
+    $blueBike = new Bike();
+    $blueBike->color = 'blue';
+    $blueBike->save();
+
+    $carIds = Vehicle::all()->pluck('id');
+
+    $this->assertEquals([$redCar->id, $blueBike->id], $carIds->toArray());
   }
 } 

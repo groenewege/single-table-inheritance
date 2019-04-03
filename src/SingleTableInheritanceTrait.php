@@ -62,7 +62,7 @@ trait SingleTableInheritanceTrait {
       // prevent infinite recursion if the singleTableSubclasses is inherited
       if (!in_array($calledClass, $subclasses)) {
         foreach ($subclasses as $subclass) {
-          $typeMap = array_merge($typeMap, $subclass::getSingleTableTypeMap());
+          $typeMap = $typeMap + $subclass::getSingleTableTypeMap();
         }
       }
     }
@@ -171,24 +171,28 @@ trait SingleTableInheritanceTrait {
    */
   public function newFromBuilder($attributes = array(), $connection = null) {
     $typeField = static::$singleTableTypeField;
+    $attributes = (array) $attributes;
 
-    $classType = isset($attributes->$typeField) ? $attributes->$typeField : null;
+    $classType = array_key_exists($typeField, $attributes) ? $attributes[$typeField] : null;
 
     if ($classType !== null) {
       $childTypes = static::getSingleTableTypeMap();
       if (array_key_exists($classType, $childTypes)) {
         $class = $childTypes[$classType];
         $instance = (new $class)->newInstance([], true);
-        $instance->setFilteredAttributes((array) $attributes);
-        $instance->setConnection($connection ?: $this->connection);
+        $instance->setFilteredAttributes($attributes);
+        $instance->setConnection($connection ?: $this->getConnectionName());
+        $instance->fireModelEvent('retrieved', false);
         return $instance;
       } else {
-        // Throwing either of the exceptions suggests something has gone very wrong with the Global Scope
+        // Something has gone very wrong with the Global Scope
         // There is not graceful recovery so complain loudly.
         throw new SingleTableInheritanceException("Cannot construct newFromBuilder for unrecognized $typeField=$classType");
       }
     } else {
-      throw new SingleTableInheritanceException("Cannot construct newFromBuilder without a value for $typeField");
+      // There are some cases, like Model::pluck('id'), where $attributes does not contain classType
+      // In those situations defer to the original implementation.
+      return parent::newFromBuilder($attributes, $connection);
     }
   }
 
@@ -202,6 +206,7 @@ trait SingleTableInheritanceTrait {
 
   public function setFilteredAttributes(array $attributes) {
     $persistedAttributes = $this->getPersistedAttributes();
+
     if (empty($persistedAttributes)) {
       $filteredAttributes = $attributes;
     } else {
@@ -214,11 +219,17 @@ trait SingleTableInheritanceTrait {
       if (!empty($extraAttributes) && $this->getThrowInvalidAttributeExceptions()) {
         throw new SingleTableInheritanceInvalidAttributesException("Cannot construct " . get_called_class() . ".", $extraAttributes);
       }
-
+      // Make sure to include all pivot attributes so we hydrate many-to-many relationships correctly
+      $persistedAttributes += $this->getPivotAttributeNames($attributes);
       $filteredAttributes = array_intersect_key($attributes, array_flip($persistedAttributes));
     }
 
     $this->setRawAttributes($filteredAttributes, true);
+  }
+
+  protected function getPivotAttributeNames($attributes)
+  {
+    return array_filter(array_keys($attributes), function($key) { return starts_with($key, 'pivot_'); });
   }
 
   protected function getThrowInvalidAttributeExceptions() {
